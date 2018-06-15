@@ -6,22 +6,22 @@ import {isObjectId} from "../utils/StringHelper";
 
 export async function addBooking(req, res) {
   try {
-    let roomTypeId = req.query.type;
+    let roomTypeId = req.body.type;
     if(!isValidRoomType(roomTypeId)) {
       return res.status(400).json({success: false, error: 'Invalid room type'});
     }
 
-    let quantity = Number(req.query.quantity).valueOf();
+    let quantity = Number(req.body.quantity).valueOf();
     if(isNaN(quantity)) {
       return res.status(400).json({success: false, error: 'Invalid quantity'});
     }
 
-    let start_date = new Date( Number(req.query.start).valueOf() );
+    let start_date = new Date( Number(req.body.start).valueOf() );
     if(!isValidDate(start_date)) {
       return res.status(400).json({success: false, error: 'Invalid start date'});
     }
 
-    let end_date = new Date( Number(req.query.end).valueOf() );
+    let end_date = new Date( Number(req.body.end).valueOf() );
     if(!isValidDate(end_date)) {
       return res.status(400).json({success: false, error: 'Invalid end date'});
     }
