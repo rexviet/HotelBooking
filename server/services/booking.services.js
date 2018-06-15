@@ -223,7 +223,7 @@ export async function editBooking(bookingId, bookingOptions, reqUser) {
     if(new Date() >= booking.start_date && reqUser.role !== globalConstants.userRoles.ADMIN) {
       return Promise.reject({status: 400, error: 'This booking has started.'});
     }
-    
+
     let changed = [];
     let editBooking = new EditBooking({
       user: reqUser._id,

@@ -3,7 +3,6 @@ import bodyParser from 'body-parser';
 import express from 'express';
 import mongoose from 'mongoose';
 import configs from './config';
-import Queue from './libs/Queue';
 import dummyData from './dummyData';
 import apiRoutes from './routes/index';
 import {checkLogin} from './middlewares/Auth';
@@ -20,9 +19,6 @@ mongoose.Promise = global.Promise;
     process.exit(1);
   }
 }) ();
-
-// Kue and KueUI
-Queue.init(configs.kue, configs.kueUI);
 
 // Express
 const app = express();
