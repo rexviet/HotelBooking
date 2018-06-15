@@ -80,3 +80,42 @@ export async function cancelBooking(req, res) {
     return res.status(err.status || 500).json(err);
   }
 }
+
+export async function editBooking(req, res) {
+  try {
+    let bookingId = req.params.id;
+    let reqUser = req.user;
+
+    if(!isObjectId(bookingId)) {
+      return res.status(404).json({success: false, error: 'Booking not found'});
+    }
+
+    let bookingOptions = {};
+
+    let roomId = req.body.room;
+    if(isObjectId(roomId)) {
+      bookingOptions.room = roomId;
+    }
+
+    let start_date = new Date( Number(req.body.start).valueOf() );
+    if(isValidDate(start_date)) {
+      bookingOptions.start_date = start_date;
+    }
+
+    let end_date = new Date( Number(req.body.end).valueOf() );
+    if(isValidDate(end_date)) {
+      bookingOptions.end_date = end_date;
+    }
+
+    let data = await BookingServices.editBooking(bookingId, bookingOptions, reqUser);
+
+    return res.status(200).json({
+      success: true,
+      data
+    });
+  } catch (err) {
+    err.success = false;
+    err.error = err.error || 'Internal error.';
+    return res.status(err.status || 500).json(err);
+  }
+}

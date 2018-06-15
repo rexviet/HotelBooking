@@ -11,4 +11,7 @@ router.route('/')
 router.route('/:id/cancel')
   .put(isAuth, BookingController.cancelBooking);
 
+router.route('/:id')
+  .put(isAuth, BookingController.editBooking);
+
 export default router;

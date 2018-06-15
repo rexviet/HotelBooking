@@ -20,8 +20,8 @@ const bookingSchema = new Schema({
   }
 });
 
-bookingSchema.post('save', (booking, next) => {
-  booking.updatedDate = new Date();
+bookingSchema.post('pre', function (next) {
+  this.updatedDate = new Date();
   return next();
 });
 

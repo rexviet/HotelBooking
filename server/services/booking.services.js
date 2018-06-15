@@ -1,9 +1,11 @@
 import Booking from '../models/booking';
-import {getRooms, formatBasicInfo as formatBasicRoomInfo} from "./room.services";
+import EditBooking from '../models/editBooking';
+import {getRooms, getRoomWithType, formatBasicInfo as formatBasicRoomInfo} from "./room.services";
 import {generateUniqueCode} from "../utils/StringHelper";
 import {getUserIdNumber, formatBasicInfo as formatBasicUserInfo} from "./user.services";
 import {toObjectByKey} from "../utils/ArrayHelper";
 import {getRoomTypePrice} from "./roomType.services";
+import globalConstants from "../globalConstants";
 
 export const BOOKING_LIMIT = 2;
 
@@ -21,6 +23,17 @@ export async function getBookingInTimeRange(start_date, end_date) {
   }
 }
 
+async function getBookingByRoomInTimeRange(roomId, start_date) {
+  try {
+    return await Booking.find({
+      room: roomId,
+      end_date: {$gt: start_date}
+    }, 'room').lean();
+  } catch (err) {
+    console.log('err on getBookingInTimeRange:', err);
+    return Promise.reject({status: 500, error: 'Internal error.'});
+  }
+}
 export async function bookRoom(userId, roomTypeId, quantity, start_date, end_date) {
   try {
     let resources = await Promise.all([
@@ -172,6 +185,83 @@ export async function cancelBooking(userId, bookingId) {
     return await booking.save();
   } catch (err) {
     console.log('err on cancelBooking:', err);
+    return Promise.reject({status: err.status || 500, error:  err.error || 'Internal error.'});
+  }
+}
+
+export async function editBooking(bookingId, bookingOptions, reqUser) {
+  try {
+    let booking = await Booking.findById(bookingId);
+    if(!booking) {
+      return Promise.reject({status: 404, error: 'Booking not found.'});
+    }
+
+    if(reqUser.role !== globalConstants.userRoles.ADMIN && reqUser._id.toString() !== booking.user.toString()) {
+      return Promise.reject({status: 403, error: 'Permission denied.'});
+    }
+
+    let changed = [];
+    let editBooking = new EditBooking({
+      user: reqUser._id,
+      type: reqUser.role,
+      booking: booking._id,
+      oldBooking: JSON.parse(JSON.stringify(booking))
+    });
+
+    let start_date = bookingOptions.start_date || new Date(booking.start_date).getTime();
+    let end_date = bookingOptions.end_date || new Date(booking.end_date).getTime();
+
+    if(bookingOptions.room && bookingOptions.room.toString() !== booking.room.toString()) {
+      let bookingBefore = await getBookingByRoomInTimeRange(bookingOptions.room, start_date);
+      // console.log('bookingBefore:', bookingBefore);
+      if(bookingBefore && bookingBefore.length) {
+        return Promise.reject({status: 400, error: 'Room is busy.'});
+      }
+      let room = await getRoomWithType(bookingOptions.room);
+      changed.push({
+        prop: 'room',
+        oldValue: booking.room,
+        newValue: room._id
+      });
+      booking.room = bookingOptions.room;
+      if(room.type.price !== booking.price) {
+        changed.push({
+          prop: 'price',
+          oldValue: booking.price,
+          newValue: room.type.price
+        });
+        booking.price = room.type.price;
+      }
+    }
+
+    if(start_date !== new Date(booking.start_date).getTime()) {
+      changed.push({
+        prop: 'start_date',
+        oldValue: booking.start_date,
+        newValue: bookingOptions.start_date
+      });
+      booking.start_date = bookingOptions.start_date;
+    }
+
+    if(end_date !== new Date(booking.end_date).getTime()) {
+      changed.push({
+        prop: 'end_date',
+        oldValue: booking.end_date,
+        newValue: bookingOptions.end_date
+      });
+      booking.end_date = bookingOptions.end_date;
+    }
+
+    booking = await booking.save();
+
+    editBooking.newBooking = booking;
+    editBooking.changed = changed;
+
+    await editBooking.save();
+
+    return booking;
+  } catch (err) {
+    console.log('err on editBooking:', err);
     return Promise.reject({status: err.status || 500, error:  err.error || 'Internal error.'});
   }
 }
