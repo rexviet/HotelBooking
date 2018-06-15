@@ -59,7 +59,6 @@ export async function searchBooking(req, res) {
 
 export async function cancelBooking(req, res) {
   try {
-    let userId = req.user._id;
     let bookingId = req.params.id;
     if(!isObjectId(bookingId)) {
       return res.status(404).json({
@@ -68,7 +67,7 @@ export async function cancelBooking(req, res) {
       });
     }
 
-    let data = await BookingServices.cancelBooking(userId, bookingId);
+    let data = await BookingServices.cancelBooking(req.user, bookingId);
 
     return res.status(200).json({
       success: true,

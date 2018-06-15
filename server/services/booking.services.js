@@ -166,14 +166,14 @@ export async function getUserBooking(userId, page) {
   }
 }
 
-export async function cancelBooking(userId, bookingId) {
+export async function cancelBooking(reqUser, bookingId) {
   try {
     let booking = await Booking.findById(bookingId);
     if(!booking) {
       return Promise.reject({status: 404, error: 'Booking not found.'});
     }
 
-    if(userId.toString() !== booking.user.toString()) {
+    if(reqUser._id.toString() !== booking.user.toString()) {
       return Promise.reject({status: 403, error: 'Permission denied.'});
     }
 
@@ -181,8 +181,28 @@ export async function cancelBooking(userId, bookingId) {
       return Promise.reject({status: 400, error: 'You can not cancel this booking.'});
     }
 
+    let changed = [
+      {
+        prop: 'status',
+        oldValue: 'new',
+        newValue: 'canceled'
+      }
+    ];
+    let editBooking = new EditBooking({
+      user: reqUser._id,
+      type: reqUser.role,
+      booking: booking._id,
+      oldBooking: JSON.parse(JSON.stringify(booking)),
+      changed
+    });
+
     booking.status = 'canceled';
-    return await booking.save();
+    booking = await booking.save();
+
+    editBooking.newBooking = booking;
+    await editBooking.save();
+
+    return booking;
   } catch (err) {
     console.log('err on cancelBooking:', err);
     return Promise.reject({status: err.status || 500, error:  err.error || 'Internal error.'});
