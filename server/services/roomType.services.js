@@ -3,7 +3,7 @@ import {isObjectId} from "../utils/StringHelper";
 
 export async function getRoomTypes() {
   try {
-    return await RoomTypes.find().lean();
+    return await RoomTypes.find({}, 'name price photos').lean();
   } catch (err) {
     console.log('err on getRoomTypes:', err);
     return Promise.reject({status: 500, error: 'Internal error.'});

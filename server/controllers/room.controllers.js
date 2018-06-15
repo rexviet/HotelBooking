@@ -118,7 +118,7 @@ export async function getRooms(req, res) {
       end_date = null;
     }
 
-    let data = await RoomServices.getRooms(start_date, end_date, type, null, true);
+    let data = await RoomServices.getRooms(start_date, end_date, type, null, req.query.detail !== 'true');
 
     return res.status(200).json({
       success: true,

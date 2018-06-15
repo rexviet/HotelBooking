@@ -2,6 +2,7 @@ import Rooms from '../models/rooms';
 import {getBookingInTimeRange} from "./booking.services";
 import {groupByKey} from "../utils/ArrayHelper";
 import {getRoomTypes} from "./roomType.services";
+import {toObjectByKey} from "../utils/ArrayHelper";
 
 export async function addRooms(roomOptions) {
   try {
@@ -66,10 +67,11 @@ export async function getRooms(start_date, end_date, roomTypeId, limit, format) 
     };
     // console.log('conditions:', conditions);
     let rooms = await Rooms.find(conditions).limit(limit).lean();
+    let roomTypes = await getRoomTypes();
 
     if(format) {
       let grouped = groupByKey(rooms, 'type');
-      let roomTypes = await getRoomTypes();
+      console.log('grouped:', grouped);
       let data = [];
       roomTypes.forEach(roomType => {
         roomType.available = grouped[roomType._id] ? grouped[roomType._id].length : 0;
@@ -79,6 +81,12 @@ export async function getRooms(start_date, end_date, roomTypeId, limit, format) 
       });
 
       return data;
+    } else {
+      let roomTypeMapper = toObjectByKey(roomTypes, '_id');
+      rooms = rooms.map(room => {
+        room.type = roomTypeMapper[room.type];
+        return room;
+      });
     }
 
     return rooms;
@@ -106,6 +114,15 @@ export async function formatBasicInfo(roomIds) {
     return await Rooms.find({_id: {$in: roomIds}}, 'roomNumber type description').populate('type', ['name']).lean();
   } catch (err) {
     console.log('err on getRooms:', err);
+    return Promise.reject({status: 500, error: 'Internal error.'});
+  }
+}
+
+export async function getRoomWithType(roomId) {
+  try {
+    return await Rooms.findById(roomId).populate('type', ['name', 'price']).lean();
+  } catch (err) {
+    console.log('err on getRoomById:', err);
     return Promise.reject({status: 500, error: 'Internal error.'});
   }
 }
