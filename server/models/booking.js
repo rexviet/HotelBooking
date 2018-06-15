@@ -11,7 +11,13 @@ const bookingSchema = new Schema({
   start_date: {type: Date, index: true},
   end_date: {type: Date, index: true},
   createdDate: {type: Date, default: Date.now},
-  updatedDate: {type: Date, default: Date.now}
+  updatedDate: {type: Date, default: Date.now},
+  status: {
+    type: String,
+    enum: ['new', 'activated', 'canceled'],
+    default: 'new',
+    index: true
+  }
 });
 
 bookingSchema.post('save', (booking, next) => {

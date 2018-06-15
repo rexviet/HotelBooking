@@ -152,3 +152,26 @@ export async function getUserBooking(userId, page) {
     return Promise.reject({status: err.status || 500, error:  err.error || 'Internal error.'});
   }
 }
+
+export async function cancelBooking(userId, bookingId) {
+  try {
+    let booking = await Booking.findById(bookingId);
+    if(!booking) {
+      return Promise.reject({status: 404, error: 'Booking not found.'});
+    }
+
+    if(userId.toString() !== booking.user.toString()) {
+      return Promise.reject({status: 403, error: 'Permission denied.'});
+    }
+
+    if(booking.status !== 'new') {
+      return Promise.reject({status: 400, error: 'You can not cancel this booking.'});
+    }
+
+    booking.status = 'canceled';
+    return await booking.save();
+  } catch (err) {
+    console.log('err on cancelBooking:', err);
+    return Promise.reject({status: err.status || 500, error:  err.error || 'Internal error.'});
+  }
+}

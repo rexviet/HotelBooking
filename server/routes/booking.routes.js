@@ -8,5 +8,7 @@ router.route('/')
   .get(isAdmin, BookingController.searchBooking)
   .post(isAuth, BookingController.addBooking);
 
+router.route('/:id/cancel')
+  .put(isAuth, BookingController.cancelBooking);
 
 export default router;

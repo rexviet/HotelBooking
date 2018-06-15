@@ -2,6 +2,7 @@ import * as BookingServices from '../services/booking.services';
 import {isValidRoomType} from "../services/roomType.services";
 import {isValidDate} from "../utils/DateTimeHelper";
 import {BOOKING_LIMIT} from "../services/booking.services";
+import {isObjectId} from "../utils/StringHelper";
 
 export async function addBooking(req, res) {
   try {
@@ -56,3 +57,26 @@ export async function searchBooking(req, res) {
   }
 }
 
+export async function cancelBooking(req, res) {
+  try {
+    let userId = req.user._id;
+    let bookingId = req.params.id;
+    if(!isObjectId(bookingId)) {
+      return res.status(404).json({
+        success: false,
+        error: 'Booking not found.'
+      });
+    }
+
+    let data = await BookingServices.cancelBooking(userId, bookingId);
+
+    return res.status(200).json({
+      success: true,
+      data
+    });
+  } catch (err) {
+    err.success = false;
+    err.error = err.error || 'Internal error.';
+    return res.status(err.status || 500).json(err);
+  }
+}
