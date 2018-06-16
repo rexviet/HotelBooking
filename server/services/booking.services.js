@@ -9,12 +9,15 @@ import globalConstants from "../globalConstants";
 
 export const BOOKING_LIMIT = 2;
 
-export async function getBookingInTimeRange(start_date, end_date) {
+export async function getBookingInTimeRange(start_date, end_date, roomId) {
   try {
     return await Booking.find({
+      room: roomId || {$ne: null},
+      status: {$ne: 'canceled'},
       '$or': [
         {start_date: {$gte: start_date, $lte: end_date}},
         {end_date: {$gte: start_date, $lte: end_date}},
+        {start_date: {$lt: start_date}, end_date: {$gt: end_date}}
       ]
     }, 'room').lean();
   } catch (err) {
@@ -236,7 +239,7 @@ export async function editBooking(bookingId, bookingOptions, reqUser) {
     let end_date = bookingOptions.end_date || new Date(booking.end_date).getTime();
 
     if(bookingOptions.room && bookingOptions.room.toString() !== booking.room.toString()) {
-      let bookingBefore = await getBookingByRoomInTimeRange(bookingOptions.room, start_date);
+      let bookingBefore = await getBookingInTimeRange(start_date, end_date, bookingOptions.room);
       // console.log('bookingBefore:', bookingBefore);
       if(bookingBefore && bookingBefore.length) {
         return Promise.reject({status: 400, error: 'Room is busy.'});
